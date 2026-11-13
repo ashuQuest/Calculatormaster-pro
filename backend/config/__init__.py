@@ -1,0 +1,1 @@
+# CalcMaster Pro Django Config
