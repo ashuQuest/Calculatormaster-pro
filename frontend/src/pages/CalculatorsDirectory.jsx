@@ -1,16 +1,19 @@
 import React, { useState, useMemo } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
-import { Search, Calculator, ArrowRight, Sparkles, Filter } from 'lucide-react';
-import { CATEGORIES, CALCULATORS_CATALOG } from '../calculators/registry';
+import { Link, useSearchParams } from 'react-router-dom';
+import { Search, Filter, Sparkles, ArrowRight, Calculator, Check, ArrowUpRight } from 'lucide-react';
+import { CALCULATORS_CATALOG, CATEGORIES } from '../calculators/registry';
+import { useAuth } from '../context/AuthContext';
 
 export default function CalculatorsDirectory() {
   const [searchParams, setSearchParams] = useSearchParams();
   const categoryParam = searchParams.get('category') || 'all';
-  const queryParam = searchParams.get('search') || '';
+  const initialSearch = searchParams.get('search') || '';
 
   const [activeCategory, setActiveCategory] = useState(categoryParam);
-  const [searchQuery, setSearchQuery] = useState(queryParam);
+  const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [filterType, setFilterType] = useState('all'); // 'all', 'free', 'pro'
+
+  const { hasPremium } = useAuth();
 
   const handleCategoryChange = (catId) => {
     setActiveCategory(catId);
@@ -23,79 +26,84 @@ export default function CalculatorsDirectory() {
   };
 
   const filteredList = useMemo(() => {
-    return CALCULATORS_CATALOG.filter((item) => {
+    return CALCULATORS_CATALOG.filter(calc => {
       // Category filter
-      if (activeCategory !== 'all' && item.category !== activeCategory) {
+      if (activeCategory !== 'all' && calc.category !== activeCategory) {
         return false;
       }
-      // Type filter
-      if (filterType === 'free' && item.isPremium) return false;
-      if (filterType === 'pro' && !item.isPremium) return false;
+      // Tier filter
+      if (filterType === 'free' && calc.isPremium) return false;
+      if (filterType === 'pro' && !calc.isPremium) return false;
+      
       // Search query
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
-        const matchesName = item.name.toLowerCase().includes(q);
-        const matchesDesc = item.description.toLowerCase().includes(q);
-        const matchesTags = item.tags.some(t => t.toLowerCase().includes(q));
-        if (!matchesName && !matchesDesc && !matchesTags) return false;
+        const matchesName = calc.name.toLowerCase().includes(q);
+        const matchesDesc = calc.description.toLowerCase().includes(q);
+        const matchesCat = calc.category.toLowerCase().includes(q);
+        const matchesTags = calc.tags ? calc.tags.some(t => t.toLowerCase().includes(q)) : false;
+        return matchesName || matchesDesc || matchesCat || matchesTags;
       }
       return true;
     });
   }, [activeCategory, searchQuery, filterType]);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-extrabold text-white tracking-tight">Calculator Directory</h1>
-        <p className="text-sm text-slate-400 mt-1">Browse all 40+ specialized tools across mathematics, finance, and science.</p>
-      </div>
-
-      {/* Filter and Search Bar */}
-      <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between">
-        
-        {/* Search Input */}
-        <div className="relative flex-1 max-w-md">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by name, tag, or formula..."
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 focus:border-sky-500 text-white text-xs placeholder:text-slate-500 focus:outline-none"
-          />
+      {/* Header Banner */}
+      <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-charcoal-800 border border-cream-400 dark:border-charcoal-600 shadow-soft flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-black text-charcoal-900 dark:text-white tracking-tight">
+            Calculator Directory
+          </h1>
+          <p className="text-xs sm:text-sm font-medium text-charcoal-600 dark:text-charcoal-200 mt-1 max-w-xl">
+            Browse our full catalog of 40+ precision tools across mathematical, scientific, financial, and business domains.
+          </p>
         </div>
 
-        {/* Free vs Pro Pill Filter */}
-        <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-900 border border-slate-800 self-start md:self-auto">
-          <button
-            onClick={() => setFilterType('all')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${filterType === 'all' ? 'bg-sky-500 text-white' : 'text-slate-400 hover:text-white'}`}
-          >
-            All ({CALCULATORS_CATALOG.length})
-          </button>
-          <button
-            onClick={() => setFilterType('free')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${filterType === 'free' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white'}`}
-          >
-            Free Basic
-          </button>
-          <button
-            onClick={() => setFilterType('pro')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${filterType === 'pro' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'text-slate-400 hover:text-white'}`}
-          >
-            Pro Premium
-          </button>
-        </div>
+        {/* Search input & Filter pills */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <div className="relative min-w-[240px]">
+            <Search className="w-4 h-4 text-charcoal-500 absolute left-3.5 top-3 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Search directory..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-3.5 py-2 rounded-xl bg-cream-100 dark:bg-charcoal-900 border border-cream-400 dark:border-charcoal-600 text-xs font-semibold text-charcoal-900 dark:text-white placeholder:text-charcoal-500 focus:outline-none focus:border-orange-500 transition-colors shadow-soft"
+            />
+          </div>
 
+          <div className="flex items-center gap-1 p-1 rounded-xl bg-cream-100 dark:bg-charcoal-900 border border-cream-400 dark:border-charcoal-600">
+            <button
+              onClick={() => setFilterType('all')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${filterType === 'all' ? 'bg-white dark:bg-charcoal-700 text-charcoal-900 dark:text-white shadow-soft' : 'text-charcoal-600 dark:text-charcoal-300 hover:text-charcoal-900 dark:hover:text-white'}`}
+            >
+              All ({CALCULATORS_CATALOG.length})
+            </button>
+            <button
+              onClick={() => setFilterType('free')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${filterType === 'free' ? 'bg-white dark:bg-charcoal-700 text-charcoal-900 dark:text-white shadow-soft' : 'text-charcoal-600 dark:text-charcoal-300 hover:text-charcoal-900 dark:hover:text-white'}`}
+            >
+              Free Basic
+            </button>
+            <button
+              onClick={() => setFilterType('pro')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${filterType === 'pro' ? 'bg-orange-600 text-white shadow-soft' : 'text-charcoal-600 dark:text-charcoal-300 hover:text-charcoal-900 dark:hover:text-white'}`}
+            >
+              Pro Premium
+            </button>
+          </div>
+
+        </div>
       </div>
 
       {/* Category Tabs */}
       <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
         <button
           onClick={() => handleCategoryChange('all')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-colors ${activeCategory === 'all' ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/20' : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-white'}`}
+          className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-colors ${activeCategory === 'all' ? 'bg-orange-600 text-white shadow-soft' : 'bg-white dark:bg-charcoal-800 border border-cream-400 dark:border-charcoal-600 text-charcoal-800 dark:text-cream-100 hover:bg-cream-200 dark:hover:bg-charcoal-700'}`}
         >
           All Categories
         </button>
@@ -103,7 +111,7 @@ export default function CalculatorsDirectory() {
           <button
             key={cat.id}
             onClick={() => handleCategoryChange(cat.id)}
-            className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-colors ${activeCategory === cat.id ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/20' : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-white'}`}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-colors ${activeCategory === cat.id ? 'bg-orange-600 text-white shadow-soft' : 'bg-white dark:bg-charcoal-800 border border-cream-400 dark:border-charcoal-600 text-charcoal-800 dark:text-cream-100 hover:bg-cream-200 dark:hover:bg-charcoal-700'}`}
           >
             {cat.name}
           </button>
@@ -117,53 +125,53 @@ export default function CalculatorsDirectory() {
             <Link
               key={calc.id}
               to={`/calculator/${calc.id}`}
-              className="p-5 rounded-2xl bg-slate-900 border border-slate-800 hover:border-sky-500/60 hover:bg-slate-850/80 transition-all group flex flex-col justify-between"
+              className="bg-white dark:bg-charcoal-800 p-5 rounded-2xl border border-cream-400 dark:border-charcoal-600 hover:border-orange-500 shadow-soft hover:shadow-card transition-all flex flex-col justify-between group"
             >
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <div className="w-10 h-10 rounded-xl bg-sky-500/10 text-sky-400 flex items-center justify-center group-hover:scale-105 transition-transform">
-                    <Calculator className="w-5 h-5" />
+                  <div className="w-9 h-9 rounded-xl bg-cream-200 dark:bg-charcoal-700 text-charcoal-800 dark:text-cream-100 flex items-center justify-center group-hover:bg-orange-600 group-hover:text-white transition-colors">
+                    <Calculator className="w-4 h-4" />
                   </div>
                   {calc.isPremium ? (
-                    <span className="px-2 py-0.5 text-[9px] font-bold rounded-md bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                    <span className="px-2 py-0.5 text-[9px] font-bold rounded bg-orange-100 dark:bg-orange-950/80 text-orange-800 dark:text-orange-300 border border-orange-200 dark:border-orange-800">
                       PRO
                     </span>
                   ) : (
-                    <span className="px-2 py-0.5 text-[9px] font-bold rounded-md bg-slate-800 text-slate-400 border border-slate-700">
+                    <span className="px-2 py-0.5 text-[9px] font-bold rounded bg-cream-200 dark:bg-charcoal-700 text-charcoal-700 dark:text-cream-200">
                       FREE
                     </span>
                   )}
                 </div>
 
-                <h3 className="font-bold text-white text-base group-hover:text-sky-400 transition-colors">
+                <h3 className="font-bold text-charcoal-900 dark:text-white text-sm group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">
                   {calc.name}
                 </h3>
-                <p className="text-xs text-slate-400 mt-1.5 line-clamp-2 leading-relaxed">
+                <p className="text-xs font-medium text-charcoal-600 dark:text-charcoal-300 mt-1 line-clamp-2 leading-relaxed">
                   {calc.description}
                 </p>
 
-                <div className="mt-3 text-[10px] text-slate-500 font-mono bg-slate-950/60 px-2 py-1 rounded-md border border-slate-800/80 truncate">
+                <div className="mt-3 text-[10px] text-charcoal-600 dark:text-charcoal-300 font-mono bg-cream-100 dark:bg-charcoal-900 px-2 py-1 rounded-md border border-cream-300 dark:border-charcoal-700 truncate font-semibold">
                   {calc.formula}
                 </div>
               </div>
 
-              <div className="pt-4 mt-4 border-t border-slate-800/80 flex items-center justify-between text-xs font-semibold text-slate-300 group-hover:text-sky-400">
-                <span>Calculate Now</span>
+              <div className="pt-3.5 mt-3.5 border-t border-cream-300 dark:border-charcoal-700 flex items-center justify-between text-xs font-bold text-charcoal-700 dark:text-cream-200 group-hover:text-orange-600 dark:group-hover:text-orange-400">
+                <span className="text-[11px] uppercase font-bold text-charcoal-500 dark:text-charcoal-400">{calc.category}</span>
                 <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
               </div>
             </Link>
           ))}
         </div>
       ) : (
-        <div className="py-20 text-center rounded-3xl bg-slate-900 border border-slate-800">
-          <Calculator className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-          <h3 className="text-base font-bold text-white">No calculators found</h3>
-          <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+        <div className="py-20 text-center rounded-3xl bg-white dark:bg-charcoal-800 border border-cream-400 dark:border-charcoal-600">
+          <Calculator className="w-10 h-10 text-charcoal-400 mx-auto mb-3" />
+          <h3 className="text-base font-bold text-charcoal-900 dark:text-white">No calculators found</h3>
+          <p className="text-xs font-medium text-charcoal-600 dark:text-charcoal-300 mt-1 max-w-sm mx-auto">
             Try adjusting your search query or reset the filters to discover available tools.
           </p>
           <button
             onClick={() => { setActiveCategory('all'); setSearchQuery(''); setFilterType('all'); }}
-            className="mt-4 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold"
+            className="mt-4 px-4 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold shadow-soft"
           >
             Reset Filters
           </button>
