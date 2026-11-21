@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   Calculator, Sun, Moon, Search, User, Shield, 
-  Crown, LogOut, Menu, Sparkles, ChevronDown 
+  Crown, LogOut, Menu, Sparkles, ChevronDown, BookOpen 
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -74,6 +74,15 @@ export default function Navbar({ onOpenSearch, onOpenPayment, onToggleSidebar })
                 <span>Get Pro (₹9)</span>
               </button>
             )}
+
+            {/* Direct Link to Formula Library */}
+            <Link
+              to="/formulas"
+              className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-cream-400 dark:border-charcoal-600 bg-white dark:bg-charcoal-800 text-charcoal-800 dark:text-cream-100 hover:text-orange-600 dark:hover:text-orange-400 text-xs font-bold transition-colors shadow-soft"
+            >
+              <BookOpen className="w-3.5 h-3.5 text-orange-600" />
+              <span>Formulas</span>
+            </Link>
 
             {/* Theme Toggle Button */}
             <button

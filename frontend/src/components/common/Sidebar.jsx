@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Calculator, Atom, Sigma, TrendingUp, 
   Briefcase, RefreshCw, Calendar, HeartPulse, Star, 
   Clock, CreditCard, Settings, Shield, Crown, Sparkles, 
-  LogOut, X, ChevronRight, User
+  LogOut, X, ChevronRight, User, BookOpen 
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -14,16 +14,12 @@ export default function Sidebar({ isOpen, onClose, onOpenPayment }) {
   const { user, isAuthenticated, isSuperadmin, hasPremium, logout } = useAuth();
 
   const currentPath = location.pathname;
-  const currentSearch = location.search;
 
-  const isActive = (path, search = '') => {
-    if (search) {
-      return currentPath === path && currentSearch.includes(search);
-    }
+  const isActive = (path) => {
     if (path === '/') {
-      return currentPath === '/' && !currentSearch;
+      return currentPath === '/';
     }
-    return currentPath.startsWith(path) && !currentSearch;
+    return currentPath === path || currentPath.startsWith(path + '/');
   };
 
   const navSections = [
@@ -32,28 +28,29 @@ export default function Sidebar({ isOpen, onClose, onOpenPayment }) {
       items: [
         { label: 'Overview', path: '/', icon: LayoutDashboard },
         { label: 'All Calculators', path: '/calculators', icon: Calculator },
+        { label: 'Formula Library', path: '/formulas', icon: BookOpen, badge: '14 DISCIP' },
       ]
     },
     {
       title: 'CATEGORIES',
       items: [
-        { label: 'Basic Math', path: '/calculators', search: 'category=basic', icon: Calculator },
-        { label: 'Scientific', path: '/calculators', search: 'category=scientific', icon: Atom },
-        { label: 'Mathematics', path: '/calculators', search: 'category=mathematical', icon: Sigma },
-        { label: 'Financial & ROI', path: '/calculators', search: 'category=financial', icon: TrendingUp },
-        { label: 'Business & Margin', path: '/calculators', search: 'category=business', icon: Briefcase },
-        { label: 'Unit Converters', path: '/calculators', search: 'category=converters', icon: RefreshCw },
-        { label: 'Date & Time', path: '/calculators', search: 'category=datetime', icon: Calendar },
-        { label: 'Daily Life & Health', path: '/calculators', search: 'category=dailylife', icon: HeartPulse },
+        { label: 'Basic Math', path: '/calculators/basic', icon: Calculator },
+        { label: 'Scientific', path: '/calculators/scientific', icon: Atom },
+        { label: 'Mathematics', path: '/calculators/mathematical', icon: Sigma },
+        { label: 'Financial & ROI', path: '/calculators/financial', icon: TrendingUp },
+        { label: 'Business & Margin', path: '/calculators/business', icon: Briefcase },
+        { label: 'Unit Converters', path: '/calculators/converters', icon: RefreshCw },
+        { label: 'Date & Time', path: '/calculators/datetime', icon: Calendar },
+        { label: 'Daily Life & Health', path: '/calculators/dailylife', icon: HeartPulse },
       ]
     },
     {
       title: 'WORKSPACE',
       items: [
-        { label: 'Favorites', path: isAuthenticated ? '/dashboard?tab=saved' : '/login', icon: Star },
-        { label: 'Calculation History', path: isAuthenticated ? '/dashboard?tab=history' : '/login', icon: Clock },
+        { label: 'Favorites', path: '/favorites', icon: Star },
+        { label: 'Calculation History', path: '/history', icon: Clock },
         { label: 'Pricing Plans', path: '/pricing', icon: CreditCard },
-        { label: 'Settings', path: isAuthenticated ? '/dashboard?tab=settings' : '/login', icon: Settings },
+        { label: 'Settings & Profile', path: '/profile', icon: Settings },
       ]
     }
   ];
@@ -67,13 +64,9 @@ export default function Sidebar({ isOpen, onClose, onOpenPayment }) {
     });
   }
 
-  const handleNavClick = (path, search = '') => {
+  const handleNavClick = (path) => {
     if (onClose) onClose();
-    if (search) {
-      navigate(`${path}?${search}`);
-    } else {
-      navigate(path);
-    }
+    navigate(path);
   };
 
   return (
@@ -104,14 +97,14 @@ export default function Sidebar({ isOpen, onClose, onOpenPayment }) {
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="font-extrabold text-base tracking-tight text-charcoal-700 dark:text-cream-100">
+                <span className="font-extrabold text-base tracking-tight text-charcoal-900 dark:text-white">
                   CalcMaster
                 </span>
                 <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-orange-100 dark:bg-orange-950/60 text-orange-700 dark:text-orange-400 border border-orange-200 dark:border-orange-800 uppercase tracking-wider">
                   Pro
                 </span>
               </div>
-              <p className="text-[10px] text-charcoal-400 dark:text-charcoal-300 font-medium tracking-tight">
+              <p className="text-[10px] text-charcoal-500 dark:text-charcoal-400 font-medium tracking-tight">
                 One Platform. Every Calculation.
               </p>
             </div>
@@ -135,11 +128,11 @@ export default function Sidebar({ isOpen, onClose, onOpenPayment }) {
               </p>
               <div className="space-y-0.5">
                 {section.items.map((item, itemIdx) => {
-                  const active = isActive(item.path, item.search);
+                  const active = isActive(item.path);
                   return (
                     <button
                       key={itemIdx}
-                      onClick={() => handleNavClick(item.path, item.search)}
+                      onClick={() => handleNavClick(item.path)}
                       className={`
                         w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium 
                         transition-all duration-150 group text-left
@@ -201,7 +194,7 @@ export default function Sidebar({ isOpen, onClose, onOpenPayment }) {
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-1">
-                    <p className="text-xs font-bold text-charcoal-700 dark:text-cream-100 truncate">
+                    <p className="text-xs font-bold text-charcoal-900 dark:text-white truncate">
                       {user?.username}
                     </p>
                     {isSuperadmin ? (
@@ -228,7 +221,7 @@ export default function Sidebar({ isOpen, onClose, onOpenPayment }) {
               <Link
                 to="/login"
                 onClick={onClose}
-                className="flex-1 py-2 text-center rounded-xl bg-white dark:bg-charcoal-800 border border-cream-400 dark:border-charcoal-600 text-charcoal-700 dark:text-cream-100 text-xs font-semibold hover:bg-cream-50"
+                className="flex-1 py-2 text-center rounded-xl bg-white dark:bg-charcoal-800 border border-cream-400 dark:border-charcoal-600 text-charcoal-900 dark:text-white text-xs font-semibold hover:bg-cream-50"
               >
                 Log In
               </Link>

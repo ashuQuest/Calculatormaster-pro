@@ -10,10 +10,15 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 
-from .models import CalculationHistory, SavedCalculation, FavoriteCalculator, CustomFormula
+from django.db.models import Q
+from .models import (
+    CalculationHistory, SavedCalculation, FavoriteCalculator, CustomFormula,
+    FormulaCategory, FormulaItem, FormulaVariable, FormulaExample, FormulaFavorite
+)
 from .serializers import (
     CalculationHistorySerializer, SavedCalculationSerializer,
-    FavoriteCalculatorSerializer, CustomFormulaSerializer
+    FavoriteCalculatorSerializer, CustomFormulaSerializer,
+    FormulaCategorySerializer, FormulaItemListSerializer, FormulaItemDetailSerializer
 )
 from apps.accounts.permissions import HasPremiumAccess, IsNotBlocked
 
@@ -205,3 +210,67 @@ class ExportCalculationHistoryPDFView(APIView):
         response = HttpResponse(buffer.getvalue(), content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename="calcmaster_history_{timezone.now().strftime("%Y%m%d_%H%M")}.pdf"'
         return response
+
+
+# ---------------------------------------------------------------------------
+# FORMULA LIBRARY VIEWS
+# ---------------------------------------------------------------------------
+
+class FormulaCategoryListView(generics.ListAPIView):
+    permission_classes = [permissions.AllowAny]
+    serializer_class = FormulaCategorySerializer
+    queryset = FormulaCategory.objects.all()
+
+
+class FormulaItemListView(generics.ListAPIView):
+    permission_classes = [permissions.AllowAny]
+    serializer_class = FormulaItemListSerializer
+
+    def get_queryset(self):
+        queryset = FormulaItem.objects.select_related('category').all()
+        
+        category = self.request.query_params.get('category')
+        difficulty = self.request.query_params.get('difficulty')
+        search = self.request.query_params.get('search')
+
+        if category:
+            queryset = queryset.filter(Q(category__slug=category) | Q(category__name__iexact=category))
+        
+        if difficulty and difficulty.lower() != 'all':
+            queryset = queryset.filter(difficulty__iexact=difficulty)
+        
+        if search:
+            queryset = queryset.filter(
+                Q(title__icontains=search) |
+                Q(description__icontains=search) |
+                Q(latex_expression__icontains=search) |
+                Q(category__name__icontains=search)
+            )
+
+        return queryset
+
+
+class FormulaItemDetailView(generics.RetrieveAPIView):
+    permission_classes = [permissions.AllowAny]
+    serializer_class = FormulaItemDetailSerializer
+    queryset = FormulaItem.objects.select_related('category').prefetch_related('variables', 'examples').all()
+    lookup_field = 'slug'
+
+
+class FormulaFavoriteToggleView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, slug):
+        try:
+            formula = FormulaItem.objects.get(slug=slug)
+        except FormulaItem.DoesNotExist:
+            return Response({'error': 'Formula not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        favorite = FormulaFavorite.objects.filter(user=request.user, formula=formula).first()
+        if favorite:
+            favorite.delete()
+            return Response({'success': True, 'is_favorite': False, 'message': 'Removed from favorites.'})
+        else:
+            FormulaFavorite.objects.create(user=request.user, formula=formula)
+            return Response({'success': True, 'is_favorite': True, 'message': 'Added to favorites.'})
+

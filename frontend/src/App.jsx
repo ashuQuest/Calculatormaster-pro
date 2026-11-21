@@ -11,10 +11,13 @@ import SearchModal from './components/common/SearchModal';
 import Home from './pages/Home';
 import CalculatorsDirectory from './pages/CalculatorsDirectory';
 import CalculatorView from './pages/CalculatorView';
+import FormulasDirectory from './pages/FormulasDirectory';
+import FormulaDetail from './pages/FormulaDetail';
 import Pricing from './pages/Pricing';
 import Auth from './pages/Auth';
 import UserDashboard from './pages/UserDashboard';
 import SuperadminDashboard from './pages/SuperadminDashboard';
+import NotFound from './pages/NotFound';
 import { 
   AboutPage, ContactPage, PrivacyPolicyPage, 
   TermsPage, RefundPolicyPage, DisclaimerPage 
@@ -89,14 +92,23 @@ function AppContent() {
 
         <main className="flex-1">
           <Routes>
+            {/* Core Home & Calculators */}
             <Route path="/" element={<Home onOpenPayment={handleOpenPayment} onOpenSearch={() => setSearchModalOpen(true)} />} />
             <Route path="/calculators" element={<CalculatorsDirectory />} />
+            <Route path="/calculators/:category" element={<CalculatorsDirectory />} />
             <Route path="/calculator/:id" element={<CalculatorView onOpenPayment={handleOpenPayment} />} />
-            <Route path="/pricing" element={<Pricing onOpenPayment={handleOpenPayment} />} />
             
+            {/* Formula Library */}
+            <Route path="/formulas" element={<FormulasDirectory />} />
+            <Route path="/formulas/:category" element={<FormulasDirectory />} />
+            <Route path="/formula/:slug" element={<FormulaDetail />} />
+
+            {/* Pricing & Auth */}
+            <Route path="/pricing" element={<Pricing onOpenPayment={handleOpenPayment} />} />
             <Route path="/login" element={<Auth initialMode="login" />} />
             <Route path="/register" element={<Auth initialMode="register" />} />
 
+            {/* User Workspace Shortcuts */}
             <Route
               path="/dashboard"
               element={
@@ -105,7 +117,11 @@ function AppContent() {
                 </ProtectedRoute>
               }
             />
+            <Route path="/favorites" element={<Navigate to="/dashboard?tab=saved" replace />} />
+            <Route path="/history" element={<Navigate to="/dashboard?tab=history" replace />} />
+            <Route path="/profile" element={<Navigate to="/dashboard?tab=settings" replace />} />
 
+            {/* Superadmin Center */}
             <Route
               path="/admin"
               element={
@@ -123,8 +139,8 @@ function AppContent() {
             <Route path="/refund" element={<RefundPolicyPage />} />
             <Route path="/disclaimer" element={<DisclaimerPage />} />
 
-            {/* Fallback */}
-            <Route path="*" element={<Navigate to="/" replace />} />
+            {/* Dedicated 404 Page */}
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </main>
 
